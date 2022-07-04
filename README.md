@@ -8,8 +8,8 @@ The classic game of life, written in the rust programming language together with
 | --- | --- |
 | LMB | Place/Remove cell on mouse position |
 | Tab | Toggle keyboard mode |
-| Arrow Keys | Move marker in keyboard mode |
-| Space | Place/Remove cell on marker |
+| Arrow Keys | Move camera |
+| Space | Place/Remove cell in the middle of the screen in keyboard mode |
 | Return | Start simulation |
 | I | Zoom in |
 | O | Zoom out |
