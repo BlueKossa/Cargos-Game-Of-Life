@@ -10,7 +10,6 @@ fn main() {
 
 struct Model {
     draw_mode: [bool; 2],
-    last_cell: (f32, f32),
     alive: Vec<(f32, f32)>,
     running: bool,
     speed: u32,
@@ -22,7 +21,6 @@ struct Model {
 
 fn model(app: &App) -> Model {
     let draw_mode = [false; 2];
-    let last_cell = (0.1, 0.1);
     let alive: Vec<(f32, f32)> = Vec::new();
     let running = false;
     let movement_offset = [0.0; 2];
@@ -52,7 +50,7 @@ fn model(app: &App) -> Model {
         .key_pressed(key_pressed)
         .build()
         .unwrap();
-    Model { draw_mode, last_cell, alive, running, movement_offset, speed, marker, markermode, zoom_scale }
+    Model { draw_mode, alive, running, movement_offset, speed, marker, markermode, zoom_scale }
 }
 
 fn update(_app: &App, _model: &mut Model, _update: Update) {
@@ -67,7 +65,6 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
                 _model.alive.push(pos);
                 _model.draw_mode[1] = true;
             }
-            _model.last_cell = pos;
         } else if _app.mouse.buttons.left().is_up() {
             _model.draw_mode = [false; 2];
         }
@@ -149,7 +146,6 @@ fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                 } else {
                     model.alive.push((0.0 - model.movement_offset[0]/model.zoom_scale, 0.0 - model.movement_offset[1]/model.zoom_scale));
                 }
-                model.last_cell = model.marker;
             }
             _other_key => {}
         }
