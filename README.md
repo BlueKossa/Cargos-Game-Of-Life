@@ -7,7 +7,7 @@ The classic game of life, written in the rust programming language together with
 | Key | Function |
 | --- | --- |
 | LMB | Place cell on mouse position |
-| Tab | Enter "marking" mode |
+| Tab | Toggle "marking" mode |
 | Arrow Keys | Move marker |
 | Space | Place cell on marker |
 | Return | Start simulation |
