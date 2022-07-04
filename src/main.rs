@@ -57,7 +57,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
     if _model.running == false { //Runs during the drawing phase of the program.
         if _app.mouse.buttons.left().is_down() { //if the LMB is held down, draw/remove cells at the mouse position.
-            let pos = ((_app.mouse.x/_model.zoom_scale).round(), (_app.mouse.y/_model.zoom_scale).round());
+            let pos = ((_app.mouse.x/_model.zoom_scale - _model.movement_offset[0]).round(), (_app.mouse.y/_model.zoom_scale - _model.movement_offset[1]).round());
             if _model.alive.contains(&pos) && !_model.draw_mode[1] { //checks if the last cell was drawn here, and if it was do not attempt to draw again.
                 _model.alive.retain(|&x| x != pos);
                 _model.draw_mode[0] = true;
@@ -141,10 +141,10 @@ fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                 model.markermode = !model.markermode;
             }
             Key::Space => {
-                if model.alive.contains(&(0.0 - model.movement_offset[0]/model.zoom_scale, 0.0 - model.movement_offset[1]/model.zoom_scale)) {
-                    model.alive.retain(|&x| x != (0.0, 0.0));
+                if model.alive.contains(&(0.0 - model.movement_offset[0], 0.0 - model.movement_offset[1])) {
+                    model.alive.retain(|&x| x != (0.0 - model.movement_offset[0], 0.0 - model.movement_offset[1]));
                 } else {
-                    model.alive.push((0.0 - model.movement_offset[0]/model.zoom_scale, 0.0 - model.movement_offset[1]/model.zoom_scale));
+                    model.alive.push((0.0 - model.movement_offset[0], 0.0 - model.movement_offset[1]));
                 }
             }
             _other_key => {}
@@ -152,25 +152,27 @@ fn key_pressed(_app: &App, model: &mut Model, key: Key) {
     }
     match key {
         Key::Left => {
-            model.movement_offset[0] += model.zoom_scale;
+            model.movement_offset[0] += 1.0;
         }
         Key::Right => {
-            model.movement_offset[0] -= model.zoom_scale;
+            model.movement_offset[0] -= 1.0;
         }
         Key::Up => {
-            model.movement_offset[1] -= model.zoom_scale;
+            model.movement_offset[1] -= 1.0;
         }
         Key::Down => {
-            model.movement_offset[1] += model.zoom_scale;
+            model.movement_offset[1] += 1.0;
         }
         Key::Return => {
             model.running = !model.running;
         }
         Key::I => {
             model.zoom_scale += 0.5;
+            //model.movement_offset = [(model.movement_offset[0]/model.zoom_scale*2.0).round()*model.zoom_scale/2.0, (model.movement_offset[1]/model.zoom_scale*2.0).round()*model.zoom_scale/2.0];
         }
         Key::O => {
             model.zoom_scale -= 0.5;
+            //model.movement_offset = [(model.movement_offset[0]/model.zoom_scale*2.0).round()*model.zoom_scale/2.0, (model.movement_offset[1]/model.zoom_scale*2.0).round()*model.zoom_scale/2.0];
         }
         _other_key => {}
     }
@@ -206,7 +208,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
     //loop through every alive cell and draw a rectangle at that coordinate
     for i in &model.alive {
         draw.rect()
-            .x_y(i.0 * model.zoom_scale + model.movement_offset[0], i.1 * model.zoom_scale + model.movement_offset[1])
+            .x_y((i.0 + model.movement_offset[0]) * model.zoom_scale, (i.1 + model.movement_offset[1]) * model.zoom_scale)
             .w_h(model.zoom_scale, model.zoom_scale)
             .color(WHITE);
     }
@@ -215,7 +217,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
             .x_y(model.marker.0 * model.zoom_scale, model.marker.1 * model.zoom_scale)
             .w_h(model.zoom_scale + 3.0, model.zoom_scale + 3.0)
             .color(RED);
-        if model.alive.contains(&(0.0 - model.movement_offset[0]/model.zoom_scale, 0.0 - model.movement_offset[1]/model.zoom_scale)) {
+        if model.alive.contains(&(0.0 - model.movement_offset[0], 0.0 - model.movement_offset[1])) {
             draw.rect()
                 .x_y(0.0, 0.0)
                 .w_h(model.zoom_scale, model.zoom_scale)
