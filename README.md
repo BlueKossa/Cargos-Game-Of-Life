@@ -1,6 +1,6 @@
 # Conway's Game of Life
 
-The classic game of life, written in the rust programming language.
+The classic game of life, written in the rust programming language together with [nannou](https://github.com/nannou-org/nannou).
 
 ## Features
 
