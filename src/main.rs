@@ -141,10 +141,12 @@ fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                 model.markermode = !model.markermode;
             }
             Key::Space => {
-                if model.alive.contains(&(0.0 - model.movement_offset[0], 0.0 - model.movement_offset[1])) {
-                    model.alive.retain(|&x| x != (0.0 - model.movement_offset[0], 0.0 - model.movement_offset[1]));
-                } else {
-                    model.alive.push((0.0 - model.movement_offset[0], 0.0 - model.movement_offset[1]));
+                if model.markermode {
+                    if model.alive.contains(&(0.0 - model.movement_offset[0], 0.0 - model.movement_offset[1])) {
+                        model.alive.retain(|&x| x != (0.0 - model.movement_offset[0], 0.0 - model.movement_offset[1]));
+                    } else {
+                        model.alive.push((0.0 - model.movement_offset[0], 0.0 - model.movement_offset[1]));
+                    }
                 }
             }
             _other_key => {}
