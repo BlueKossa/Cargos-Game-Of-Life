@@ -1,17 +1,15 @@
-use nannou::prelude::*;
-use std::io;
-use std::{thread::sleep, time::Duration};
+use std::{io, thread::sleep, time::Duration};
 
-const SIZE: f32 = 1005.0;
-
-const GRIDSIZE: f32 = 10.0;
+use nannou::{App, Frame};
+use nannou::color::{BLACK, GRAY, WHITE, RED};
+use nannou::event::{Update, Key};
 
 fn main() {
     nannou::app(model).update(update).run();
 }
 
 struct Model {
-    has_drawn: bool,
+    draw_mode: [bool; 2],
     last_cell: (f32, f32),
     alive: Vec<(f32, f32)>,
     running: bool,
@@ -19,9 +17,18 @@ struct Model {
     marker: (f32, f32),
     markermode: bool,
     zoom_scale: f32,
+    movement_offset: [f32; 2],
 }
 
 fn model(app: &App) -> Model {
+    let draw_mode = [false; 2];
+    let last_cell = (0.1, 0.1);
+    let alive: Vec<(f32, f32)> = Vec::new();
+    let running = false;
+    let movement_offset = [0.0; 2];
+    let markermode: bool = false;
+    let marker: (f32, f32) = (0.0, 0.0);
+    let zoom_scale = 10.0;
     let mut speedinput = true;
     let mut speed = 1000;
     while speedinput {
@@ -40,78 +47,29 @@ fn model(app: &App) -> Model {
     }
     app
         .new_window()
-        .size(SIZE as u32,SIZE as u32)
+        .size(1005,1005)
         .view(view)
+        .key_pressed(key_pressed)
         .build()
         .unwrap();
-    let has_drawn = false;
-    let last_cell = (0.1, 0.1);
-    let alive: Vec<(f32, f32)> = Vec::new();
-    let running = false;
-    let markermode: bool = false;
-    let marker: (f32, f32) = (0.0, 0.0);
-    let zoom_scale = GRIDSIZE;
-    Model { has_drawn, last_cell, alive, running, speed, marker, markermode, zoom_scale }
+    Model { draw_mode, last_cell, alive, running, movement_offset, speed, marker, markermode, zoom_scale }
 }
 
 fn update(_app: &App, _model: &mut Model, _update: Update) {
-    if _model.running == false {
-        if _app.mouse.buttons.left().is_down() /* && !_model.has_drawn */ {
-            _model.has_drawn = true;
+
+    if _model.running == false { //Runs during the drawing phase of the program.
+        if _app.mouse.buttons.left().is_down() { //if the LMB is held down, draw/remove cells at the mouse position.
             let pos = ((_app.mouse.x/_model.zoom_scale).round(), (_app.mouse.y/_model.zoom_scale).round());
-            if _model.alive.contains(&pos) && _model.last_cell != pos {
+            if _model.alive.contains(&pos) && !_model.draw_mode[1] { //checks if the last cell was drawn here, and if it was do not attempt to draw again.
                 _model.alive.retain(|&x| x != pos);
-            } else if _model.last_cell != pos {
+                _model.draw_mode[0] = true;
+            } else if !_model.alive.contains(&pos) && !_model.draw_mode[0] {
                 _model.alive.push(pos);
+                _model.draw_mode[1] = true;
             }
             _model.last_cell = pos;
-            _model.has_drawn = true;
         } else if _app.mouse.buttons.left().is_up() {
-            _model.has_drawn = false;
-        }
-        let mut moving = false;
-        if key_down(_app, _model,&Key::Return) {
-            _model.running = true;
-        } if key_down(_app, _model,&Key::Tab) {
-            _model.markermode = !_model.markermode;
-            moving = true;
-
-        } if _model.markermode == true && key_down(_app, _model,&Key::Left) {
-            _model.marker.0 -= 1.0;
-            moving = true;
-        } if _model.markermode == true && key_down(_app, _model,&Key::Right) {
-            _model.marker.0 += 1.0;
-            moving = true;
-        } if _model.markermode == true && key_down(_app, _model,&Key::Up) {
-            _model.marker.1 += 1.0;
-            moving = true;
-        } if _model.markermode == true && key_down(_app, _model,&Key::Down) {
-            _model.marker.1 -= 1.0;
-            moving = true;
-        } if _model.markermode == true && key_down(_app, _model,&Key::Space) {
-            if _model.alive.contains(&_model.marker) && _model.last_cell != _model.marker {
-                _model.alive.retain(|&x| x != _model.marker);
-            } else if _model.last_cell != _model.marker {
-                _model.alive.push(_model.marker);
-            }
-            _model.last_cell = _model.marker;
-            moving = true;
-        }
-
-        if key_down(_app, _model,&Key::I) {
-            _model.zoom_scale += 0.3;
-            moving = true;
-        } if key_down(_app, _model,&Key::O) {
-            _model.zoom_scale -= 0.3;
-            moving = true;
-        }
-
-
-        if moving == true {
-            sleep(Duration::from_millis(100));
-        }
-        if !_app.mouse.buttons.left().is_down() && !key_down(_app, _model,&Key::Space) {
-            _model.last_cell = (0.1,0.1);
+            _model.draw_mode = [false; 2];
         }
     } else {
         let mut dying: Vec<(f32, f32)> = Vec::new();
@@ -179,6 +137,49 @@ fn key_down(app: &App, _model: &mut Model, key: &Key) -> bool{
     app.keys.down.contains(&key)
 }
 
+fn key_pressed(_app: &App, model: &mut Model, key: Key) {
+    if !model.running {
+        match key {
+            Key::Tab => {
+                model.markermode = !model.markermode;
+            }
+            Key::Space => {
+                if model.alive.contains(&(0.0 - model.movement_offset[0]/model.zoom_scale, 0.0 - model.movement_offset[1]/model.zoom_scale)) {
+                    model.alive.retain(|&x| x != (0.0, 0.0));
+                } else {
+                    model.alive.push((0.0 - model.movement_offset[0]/model.zoom_scale, 0.0 - model.movement_offset[1]/model.zoom_scale));
+                }
+                model.last_cell = model.marker;
+            }
+            _other_key => {}
+        }
+    }
+    match key {
+        Key::Left => {
+            model.movement_offset[0] += model.zoom_scale;
+        }
+        Key::Right => {
+            model.movement_offset[0] -= model.zoom_scale;
+        }
+        Key::Up => {
+            model.movement_offset[1] -= model.zoom_scale;
+        }
+        Key::Down => {
+            model.movement_offset[1] += model.zoom_scale;
+        }
+        Key::Return => {
+            model.running = !model.running;
+        }
+        Key::I => {
+            model.zoom_scale += 0.5;
+        }
+        Key::O => {
+            model.zoom_scale -= 0.5;
+        }
+        _other_key => {}
+    }
+}
+
 fn view(app: &App, model: &Model, frame: Frame) {
 
     let draw = app.draw();
@@ -209,26 +210,29 @@ fn view(app: &App, model: &Model, frame: Frame) {
     //loop through every alive cell and draw a rectangle at that coordinate
     for i in &model.alive {
         draw.rect()
-            .x_y(i.0 * model.zoom_scale, i.1 * model.zoom_scale)
+            .x_y(i.0 * model.zoom_scale + model.movement_offset[0], i.1 * model.zoom_scale + model.movement_offset[1])
             .w_h(model.zoom_scale, model.zoom_scale)
             .color(WHITE);
     }
     if !model.running && model.markermode {
         draw.rect()
             .x_y(model.marker.0 * model.zoom_scale, model.marker.1 * model.zoom_scale)
-            .w_h(13.0, 13.0)
+            .w_h(model.zoom_scale + 3.0, model.zoom_scale + 3.0)
             .color(RED);
-        if model.alive.contains(&model.marker) {
+        if model.alive.contains(&(0.0 - model.movement_offset[0]/model.zoom_scale, 0.0 - model.movement_offset[1]/model.zoom_scale)) {
             draw.rect()
-                .x_y(model.marker.0 * model.zoom_scale, model.marker.1 * model.zoom_scale)
-                .w_h(10.0, 10.0)
+                .x_y(0.0, 0.0)
+                .w_h(model.zoom_scale, model.zoom_scale)
                 .color(WHITE);
         } else {
             draw.rect()
-                .x_y(model.marker.0 * model.zoom_scale, model.marker.1 * model.zoom_scale)
-                .w_h(10.0, 10.0)
+                .x_y(0.0, 0.0)
+                .w_h(model.zoom_scale, model.zoom_scale)
                 .color(BLACK);
         }
+    }
+    if app.elapsed_frames() % 120 == 0 {
+        println!("{:?}", model.alive);
     }
     //draw frame
     draw.to_frame(app, &frame).unwrap();

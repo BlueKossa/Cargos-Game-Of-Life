@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 nannou = "0.18.1"
+
+[profile.release]
+opt-level = "z"
