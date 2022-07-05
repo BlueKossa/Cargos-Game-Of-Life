@@ -1,7 +1,7 @@
 use std::{io, thread::sleep, time::Duration};
 
 use nannou::{App, Frame};
-use nannou::color::{BLACK, GRAY, WHITE, RED};
+use nannou::color::{BLACK, GRAY, WHITE, RED, LAWNGREEN};
 use nannou::event::{Update, Key};
 
 fn main() {
@@ -11,6 +11,7 @@ fn main() {
 struct Model {
     draw_mode: [bool; 2],
     alive: Vec<(f32, f32)>,
+    last_alive_count: i32,
     running: bool,
     speed: u32,
     marker: (f32, f32),
@@ -22,6 +23,7 @@ struct Model {
 fn model(app: &App) -> Model {
     let draw_mode = [false; 2];
     let alive: Vec<(f32, f32)> = Vec::new();
+    let last_alive_count = 0;
     let running = false;
     let movement_offset = [0.0; 2];
     let markermode: bool = false;
@@ -46,15 +48,15 @@ fn model(app: &App) -> Model {
     app
         .new_window()
         .size(1005,1005)
+        .fullscreen()
         .view(view)
         .key_pressed(key_pressed)
         .build()
         .unwrap();
-    Model { draw_mode, alive, running, movement_offset, speed, marker, markermode, zoom_scale }
+    Model { draw_mode, alive, last_alive_count, running, movement_offset, speed, marker, markermode, zoom_scale }
 }
 
 fn update(_app: &App, _model: &mut Model, _update: Update) {
-
     if _model.running == false { //Runs during the drawing phase of the program.
         if _app.mouse.buttons.left().is_down() { //if the LMB is held down, draw/remove cells at the mouse position.
             let pos = ((_app.mouse.x/_model.zoom_scale - _model.movement_offset[0]).round(), (_app.mouse.y/_model.zoom_scale - _model.movement_offset[1]).round());
@@ -68,16 +70,18 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         } else if _app.mouse.buttons.left().is_up() {
             _model.draw_mode = [false; 2];
         }
-    } else {
+    } else { //Runs during the update phase of the program.
         let mut dying: Vec<(f32, f32)> = Vec::new();
         let mut born: Vec<(f32, f32)> = Vec::new();
+        _model.last_alive_count = _model.alive.len() as i32;
+
         for cell in _model.alive.iter() {
             let neighbors = find_neighbors(&cell);
             let mut living_neighbors: u8 = 0;
             for neighbor in neighbors.iter() {
                 if _model.alive.contains(neighbor) {
                     living_neighbors += 1;
-                } else {
+                } else if !born.contains(neighbor) {
                     let neighbors_neighbors = find_neighbors(neighbor);
                     let mut neighbors_living_neighbors: u8 = 0;
                     for neighbor_neighbor in neighbors_neighbors.iter() {
@@ -174,6 +178,9 @@ fn key_pressed(_app: &App, model: &mut Model, key: Key) {
         }
         Key::O => {
             model.zoom_scale -= 0.5;
+            if model.zoom_scale < 0.5 {
+                model.zoom_scale = 0.5;
+            }
             //model.movement_offset = [(model.movement_offset[0]/model.zoom_scale*2.0).round()*model.zoom_scale/2.0, (model.movement_offset[1]/model.zoom_scale*2.0).round()*model.zoom_scale/2.0];
         }
         _other_key => {}
@@ -181,32 +188,48 @@ fn key_pressed(_app: &App, model: &mut Model, key: Key) {
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
-
     let draw = app.draw();
 
 
     draw.background().color(BLACK);
-    let bottomleft: (i16, i16) = ((app.window_rect().bottom_left().x/model.zoom_scale).ceil() as i16 - 1, (app.window_rect().bottom_left().y/model.zoom_scale).ceil() as i16 - 1);
-    let topright: (i16, i16) = ((app.window_rect().top_right().x/model.zoom_scale).ceil() as i16 + 1, (app.window_rect().top_right().y/model.zoom_scale).ceil() as i16 + 1);
+    let bottomleft: (f32, f32) = ((app.window_rect().bottom_left().x/model.zoom_scale) - 1.0, (app.window_rect().bottom_left().y/model.zoom_scale).ceil() - 1.0);
+    let topright: (f32, f32) = ((app.window_rect().top_right().x/model.zoom_scale) + 1.0, (app.window_rect().top_right().y/model.zoom_scale).ceil() + 1.0);
     let width = (topright.0 - bottomleft.0) as f32 * model.zoom_scale;
     let height = (topright.1 - bottomleft.1) as f32 * model.zoom_scale;
 
     //display marker and grid for editing mode
     if !model.running {
-        for i in bottomleft.0..topright.0 {
+        for i in bottomleft.0.ceil() as i16..topright.0.ceil() as i16 {
             draw.rect()
                 .x_y((i as f32 + 0.5) * model.zoom_scale, 0.0)
                 .w_h(1.0, height)
                 .color(GRAY);
         }
-        for i in bottomleft.1..topright.1 {
+        for i in bottomleft.1.ceil() as i16..topright.1.ceil() as i16 {
             draw.rect()
                 .x_y(0.0, (i as f32 + 0.5) * model.zoom_scale)
                 .w_h(width, 1.0)
                 .color(GRAY);
         }
     }
-
+    draw.text(&format!("Total Alive: {}", model.alive.len()))
+    .w_h(width - (3.0 * model.zoom_scale), height - (3.0 * model.zoom_scale))
+    .left_justify()
+    .align_text_top()
+    .font_size((width / 100.0).round() as u32);
+    draw.text(&format!("\n{:>+}", model.alive.len() as i32 - model.last_alive_count))
+    .w_h(width - (3.0 * model.zoom_scale), height - (3.0 * model.zoom_scale))
+    .left_justify()
+    .align_text_top()
+    .font_size((width / 100.0).round() as u32)
+    .color(if model.alive.len() as i32 - model.last_alive_count > 0 {
+        LAWNGREEN
+    } else if model.alive.len() as i32 - model.last_alive_count < 0 {
+        RED
+    } else {
+        WHITE
+    });
+    
     //loop through every alive cell and draw a rectangle at that coordinate
     for i in &model.alive {
         draw.rect()
@@ -231,10 +254,6 @@ fn view(app: &App, model: &Model, frame: Frame) {
                 .color(BLACK);
         }
     }
-    if app.elapsed_frames() % 120 == 0 {
-        println!("{:?}", model.alive);
-    }
     //draw frame
     draw.to_frame(app, &frame).unwrap();
-    
 }
