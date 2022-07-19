@@ -2,10 +2,10 @@ use std::collections::HashSet;
 use std::{io, thread::sleep, time::Duration};
 
 use nannou::{App, Frame};
-use nannou::color::{BLACK, GRAY, WHITE, RED, LAWNGREEN, srgba, rgba, DARKGRAY};
+use nannou::color::{BLACK, GRAY, WHITE, RED, LAWNGREEN, srgba, DARKGRAY};
 use nannou::event::{Update};
 
-use crate::keyboard_functions::{brush, selector, key_pressed};
+use crate::keyboard_functions::{mouse, mouse_move, key_pressed};
 
 pub struct Model {
     pub draw_mode: [bool; 2],
@@ -22,6 +22,9 @@ pub struct Model {
     pub markermode: bool,
     pub zoom_scale: f32,
     pub movement_offset: [i32; 2],
+    pub moving: bool,
+    pub moving_origin: (i32, i32),
+    pub moved_points: (i32, i32),
 }
 
 pub fn model(app: &App) -> Model {
@@ -35,6 +38,9 @@ pub fn model(app: &App) -> Model {
     let last_alive_count = 0;
     let running = false;
     let movement_offset = [0; 2];
+    let moving = false;
+    let moving_origin = (0, 0);
+    let moved_points = (0, 0);
     let markermode: bool = false;
     let marker: (f32, f32) = (0.0, 0.0);
     let zoom_scale = 10.0;
@@ -62,14 +68,13 @@ pub fn model(app: &App) -> Model {
         .key_pressed(key_pressed)
         .build()
         .unwrap();
-    Model { draw_mode, start_pos, current_pos, selector_active, clipboard, sel_points, alive_hash, last_alive_count, running, movement_offset, speed, marker, markermode, zoom_scale }
+    Model { draw_mode, start_pos, current_pos, selector_active, clipboard, sel_points, alive_hash, last_alive_count, running, movement_offset, speed, marker, markermode, zoom_scale, moving, moving_origin, moved_points }
 }
 
 pub fn update(_app: &App, _model: &mut Model, _update: Update) {
-    println!("poop");
+    mouse_move(_app, _model);
     if _model.running == false { //Runs during the drawing phase of the program.
-        brush(_app, _model);
-        selector(_app, _model);
+        mouse(_app, _model)
     } else { //Runs during the update phase of the program.
         let mut dying: Vec<(i32, i32)> = Vec::new();
         let mut born: Vec<(i32, i32)> = Vec::new();
