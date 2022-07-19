@@ -7,8 +7,9 @@ The classic game of life, written in the rust programming language together with
 | Key | Function |
 | --- | --- |
 | LMB | Place/Remove cell on mouse position |
-| Tab | Toggle keyboard mode |
-| Arrow Keys | Move camera |
+| Shift + LMB | Select pixels |
+| Ctrl + C / V | Copy/Paste selected pixels  |
+| Arrow Keys / RMB | Move camera |
 | Space | Place/Remove cell in the middle of the screen in keyboard mode |
 | Return | Start simulation |
 | I | Zoom in |
