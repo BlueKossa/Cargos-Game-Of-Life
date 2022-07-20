@@ -36,7 +36,6 @@ pub fn selector(_app: &App, _model : &mut Model) {
                 _model.sel_points.insert((x,y));
             }
         }
-        println!("test");
     } else if _app.mouse.buttons.left().is_up() {
         _model.selector_active = false;
     }
@@ -53,7 +52,6 @@ pub fn mouse_move(_app: &App, _model: &mut Model) {
         let moved_points = (((_model.moving_origin.0 - curr_pos.0) as f32/_model.zoom_scale).round() as i32, ((_model.moving_origin.1 - curr_pos.1) as f32/_model.zoom_scale).round() as i32);
         _model.movement_offset = [_model.movement_offset[0] - (moved_points.0 - _model.moved_points.0), _model.movement_offset[1] - (moved_points.1 - _model.moved_points.1)];
         _model.moved_points = moved_points;
-        println!("Moved: {:?} curr_pos: {:?} origin: {:?}", moved_points, curr_pos, _model.moving_origin)
     } else if _app.mouse.buttons.right().is_up() {
         _model.moving = false;
     }
@@ -124,6 +122,10 @@ pub fn key_pressed(_app: &App, model: &mut Model, key: Key) {
                 model.zoom_scale -= 0.5;
             }
             //model.movement_offset = [(model.movement_offset[0]/model.zoom_scale*2.0).round()*model.zoom_scale/2.0, (model.movement_offset[1]/model.zoom_scale*2.0).round()*model.zoom_scale/2.0];
+        }
+        Key::Q => {
+            let colors = model.colors;
+            model.colors = [colors[1], colors[0]];
         }
         _other_key => {}
     }

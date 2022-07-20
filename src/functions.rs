@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::{io, thread::sleep, time::Duration};
 
 use nannou::{App, Frame};
-use nannou::color::{BLACK, GRAY, WHITE, RED, LAWNGREEN, srgba, DARKGRAY};
+use nannou::color::{BLACK, GRAY, WHITE, RED, LAWNGREEN, srgba, DARKGRAY, Srgb};
 use nannou::event::{Update};
 
 use crate::keyboard_functions::{mouse, mouse_move, key_pressed};
@@ -24,6 +24,7 @@ pub struct Model {
     pub moving: bool,
     pub moving_origin: (i32, i32),
     pub moved_points: (i32, i32),
+    pub colors: [Srgb<u8>; 2],
 }
 
 pub fn model(app: &App) -> Model {
@@ -40,6 +41,7 @@ pub fn model(app: &App) -> Model {
     let moving = false;
     let moving_origin = (0, 0);
     let moved_points = (0, 0);
+    let colors = [BLACK, WHITE];
     let markermode: bool = false;
     let marker: (f32, f32) = (0.0, 0.0);
     let zoom_scale = 10.0;
@@ -67,7 +69,7 @@ pub fn model(app: &App) -> Model {
         .key_pressed(key_pressed)
         .build()
         .unwrap();
-    Model { draw_mode, start_pos, current_pos, selector_active, clipboard, sel_points, alive_hash, last_alive_count, running, movement_offset, speed, marker, markermode, zoom_scale, moving, moving_origin, moved_points }
+    Model { draw_mode, start_pos, current_pos, selector_active, clipboard, sel_points, alive_hash, last_alive_count, running, movement_offset, speed, marker, markermode, zoom_scale, moving, moving_origin, moved_points, colors }
 }
 
 pub fn update(_app: &App, _model: &mut Model, _update: Update) {
@@ -133,7 +135,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
 
 
-    draw.background().color(BLACK);
+    draw.background().color(model.colors[0]);
     let bottomleft: (f32, f32) = ((app.window_rect().bottom_left().x/model.zoom_scale), (app.window_rect().bottom_left().y/model.zoom_scale));
     let topright: (f32, f32) = ((app.window_rect().top_right().x/model.zoom_scale), (app.window_rect().top_right().y/model.zoom_scale));
     let width = (topright.0 - bottomleft.0) as f32 * model.zoom_scale;
@@ -158,7 +160,8 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         .w_h(width, height)
         .left_justify()
         .align_text_top()
-        .font_size((width / 100.0).round() as u32);
+        .font_size((width / 100.0).round() as u32)
+        .color(model.colors[1]);
     draw.text(&format!("\n{:>+}", model.alive_hash.len() as i32 - model.last_alive_count))
         .w_h(width, height)
         .left_justify()
@@ -169,7 +172,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     } else if model.alive_hash.len() as i32 - model.last_alive_count < 0 {
         RED
     } else {
-        WHITE
+        model.colors[1]
     });
     
     //loop through every alive cell and draw a rectangle at that coordinate
@@ -177,7 +180,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         draw.rect()
             .x_y((i.0 + model.movement_offset[0]) as f32 * model.zoom_scale, (i.1 + model.movement_offset[1]) as f32 * model.zoom_scale)
             .w_h(model.zoom_scale, model.zoom_scale)
-            .color(WHITE);
+            .color(model.colors[1]);
     }
     if !model.running && model.markermode {
         draw.rect()
@@ -188,12 +191,12 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
             draw.rect()
                 .x_y(0.0, 0.0)
                 .w_h(model.zoom_scale, model.zoom_scale)
-                .color(WHITE);
+                .color(model.colors[1]);
         } else {
             draw.rect()
                 .x_y(0.0, 0.0)
                 .w_h(model.zoom_scale, model.zoom_scale)
-                .color(BLACK);
+                .color(model.colors[0]);
         }
     }
     if !model.running {
